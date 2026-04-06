@@ -1,17 +1,1226 @@
-{\rtf1\ansi\ansicpg936\cocoartf2869
-\cocoatextscaling0\cocoaplatform0{\fonttbl\f0\fswiss\fcharset0 Helvetica;}
-{\colortbl;\red255\green255\blue255;}
-{\*\expandedcolortbl;;}
-\paperw11900\paperh16840\margl1440\margr1440\vieww11520\viewh8400\viewkind0
-\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cursor 与 Claude Code 入门</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <style>
+    :root {
+      --bg: #0d0f1a;
+      --bg-elevated: #12152a;
+      --surface: #161a2e;
+      --surface-hover: #1c2038;
+      --border: rgba(140, 120, 220, 0.2);
+      --border-strong: rgba(160, 140, 255, 0.38);
+      --text: #f0eeff;
+      --muted: #9b91c8;
+      --muted-dim: #6a5f96;
+      --accent: #a78bfa;
+      --accent-glow: rgba(167, 139, 250, 0.4);
+      --accent-dim: rgba(167, 139, 250, 0.12);
+      --cc: #34d399;
+      --cc-glow: rgba(52, 211, 153, 0.35);
+      --cc-dim: rgba(52, 211, 153, 0.1);
+      --pink: #f472b6;
+      --pink-glow: rgba(244, 114, 182, 0.35);
+      --pink-dim: rgba(244, 114, 182, 0.1);
+      --orange: #fb923c;
+      --cyan: #22d3ee;
+      --success: #34d399;
+      --warning: #fbbf24;
+      --info: #38bdf8;
+      --radius: 16px;
+      --radius-sm: 10px;
+      --font-mono: "JetBrains Mono", ui-monospace, monospace;
+      --shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
+      --shadow-lg: 0 12px 48px rgba(0, 0, 0, 0.5);
+    }
 
-\f0\fs24 \cf0 <!DOCTYPE html>\
-<html>\
-<head>\
-    <title>\uc0\u25105 \u30340 \u32593 \u31449 </title>\
-</head>\
-<body>\
-    <h1>\uc0\u25104 \u21151 \u20102 \u65281 </h1>\
-    <p>\uc0\u36825 \u26159 \u25105 \u30340 \u31532 \u19968 \u20010 \u32593 \u39029 </p>\
-</body>\
-</html>}
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      margin: 0;
+      font-family: "Noto Sans SC", system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.65;
+      min-height: 100vh;
+    }
+
+    /* 背景网格与光晕 */
+    .page-bg {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      background:
+        radial-gradient(ellipse 70% 55% at 20% 10%, rgba(167, 139, 250, 0.22), transparent 55%),
+        radial-gradient(ellipse 60% 45% at 80% 20%, rgba(244, 114, 182, 0.16), transparent 50%),
+        radial-gradient(ellipse 55% 40% at 50% 80%, rgba(52, 211, 153, 0.12), transparent 50%),
+        radial-gradient(ellipse 40% 35% at 90% 70%, rgba(34, 211, 238, 0.1), transparent 45%),
+        linear-gradient(160deg, #0d0f1a 0%, #0f0d1e 50%, #0a1018 100%);
+    }
+
+    .page-bg::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(167, 139, 250, 0.05) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(167, 139, 250, 0.05) 1px, transparent 1px);
+      background-size: 48px 48px;
+      mask-image: radial-gradient(ellipse 90% 70% at 50% 30%, black 20%, transparent 70%);
+    }
+
+    /* 顶栏 */
+    .top-nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      background: rgba(13, 15, 26, 0.75);
+      border-bottom: 1px solid var(--border);
+      box-shadow: 0 1px 0 rgba(167, 139, 250, 0.08);
+    }
+
+    .top-nav-inner {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 0.65rem 1.25rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-weight: 700;
+      font-size: 0.95rem;
+      letter-spacing: -0.02em;
+    }
+
+    .brand-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--pink), var(--accent), var(--cc));
+      box-shadow: 0 0 14px var(--pink-glow);
+      animation: pulse-dot 2.5s ease-in-out infinite;
+    }
+
+    @keyframes pulse-dot {
+      0%, 100% { box-shadow: 0 0 10px var(--pink-glow); }
+      50% { box-shadow: 0 0 20px var(--accent-glow), 0 0 30px var(--pink-glow); }
+    }
+
+    .nav-links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.35rem;
+      align-items: center;
+    }
+
+    .nav-links a {
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 0.82rem;
+      padding: 0.4rem 0.75rem;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      transition: color 0.2s, background 0.2s, border-color 0.2s;
+    }
+
+    .nav-links a:hover {
+      color: #e0ccff;
+      background: rgba(167, 139, 250, 0.12);
+      border-color: rgba(167, 139, 250, 0.3);
+    }
+
+    .nav-links a.cc-pill:hover {
+      color: #a7f3d0;
+      background: rgba(52, 211, 153, 0.1);
+      border-color: rgba(52, 211, 153, 0.3);
+    }
+
+    /* Hero */
+    .hero {
+      position: relative;
+      z-index: 1;
+      padding: 2.5rem 1.5rem 3.5rem;
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    .hero-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 2rem;
+      align-items: start;
+    }
+
+    @media (min-width: 900px) {
+      .hero-grid {
+        grid-template-columns: 1.15fr 0.85fr;
+        gap: 2.5rem;
+      }
+    }
+
+    .hero-copy h1 {
+      font-size: clamp(1.85rem, 4.5vw, 2.6rem);
+      font-weight: 800;
+      margin: 0 0 1rem;
+      letter-spacing: -0.03em;
+      line-height: 1.2;
+      background: linear-gradient(135deg, #fff 0%, #e0ccff 30%, #f0abcb 60%, #6ee7b7 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .hero-copy > p {
+      color: var(--muted);
+      margin: 0 0 1.35rem;
+      font-size: 1.05rem;
+      max-width: 52ch;
+    }
+
+    .hero-copy strong {
+      color: var(--text);
+      font-weight: 600;
+    }
+
+    .badge-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-bottom: 1.1rem;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: #c4b5fd;
+      background: linear-gradient(135deg, rgba(167, 139, 250, 0.15), rgba(244, 114, 182, 0.08));
+      padding: 0.4rem 0.85rem;
+      border-radius: 999px;
+      border: 1px solid rgba(167, 139, 250, 0.3);
+    }
+
+    .badge.cc {
+      color: #6ee7b7;
+      background: linear-gradient(135deg, rgba(52, 211, 153, 0.12), rgba(34, 211, 238, 0.08));
+      border-color: rgba(52, 211, 153, 0.3);
+    }
+
+    .cta-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.65rem;
+      margin-top: 0.25rem;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.65rem 1.15rem;
+      border-radius: 999px;
+      font-size: 0.88rem;
+      font-weight: 600;
+      text-decoration: none;
+      border: 1px solid transparent;
+      transition: transform 0.15s, box-shadow 0.2s, background 0.2s;
+    }
+
+    .btn:active {
+      transform: scale(0.98);
+    }
+
+    .btn-primary {
+      color: #fff;
+      background: linear-gradient(135deg, #a78bfa, #f472b6, #fb923c);
+      box-shadow: 0 4px 20px rgba(167, 139, 250, 0.45);
+    }
+
+    .btn-primary:hover {
+      box-shadow: 0 6px 32px rgba(244, 114, 182, 0.5);
+      transform: translateY(-1px) scale(1.02);
+    }
+
+    .btn-ghost {
+      color: var(--muted);
+      background: var(--surface);
+      border-color: var(--border);
+    }
+
+    .btn-ghost:hover {
+      color: var(--text);
+      border-color: var(--border-strong);
+      background: var(--surface-hover);
+    }
+
+    /* Hero 侧卡：亮点 */
+    .hero-side {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .stat-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 0.75rem;
+    }
+
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1rem 1.1rem;
+      transition: border-color 0.2s, transform 0.2s;
+    }
+
+    .stat-card:hover {
+      border-color: var(--border-strong);
+      transform: translateY(-2px);
+    }
+
+    .stat-card .icon-wrap {
+      width: 36px;
+      height: 36px;
+      border-radius: var(--radius-sm);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 0.65rem;
+      font-size: 0.95rem;
+    }
+
+    .stat-card.cursor .icon-wrap {
+      background: linear-gradient(135deg, rgba(167, 139, 250, 0.2), rgba(244, 114, 182, 0.12));
+      color: #c4b5fd;
+    }
+
+    .stat-card.cc-card .icon-wrap {
+      background: linear-gradient(135deg, rgba(52, 211, 153, 0.18), rgba(34, 211, 238, 0.1));
+      color: #6ee7b7;
+    }
+
+    .stat-card.cursor {
+      border-top: 2px solid transparent;
+      background: var(--surface), linear-gradient(var(--surface), var(--surface)) padding-box,
+        linear-gradient(135deg, rgba(167, 139, 250, 0.5), rgba(244, 114, 182, 0.3)) border-box;
+      border-image: linear-gradient(135deg, rgba(167, 139, 250, 0.5), rgba(244, 114, 182, 0.3)) 1;
+      border-radius: var(--radius);
+    }
+
+    .stat-card.cc-card {
+      border-top: 2px solid transparent;
+      border-image: linear-gradient(135deg, rgba(52, 211, 153, 0.5), rgba(34, 211, 238, 0.3)) 1;
+      border-radius: var(--radius);
+    }
+
+    .stat-card h4 {
+      margin: 0 0 0.25rem;
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .stat-card p {
+      margin: 0;
+      font-size: 0.78rem;
+      color: var(--muted-dim);
+      line-height: 1.5;
+    }
+
+    .quick-tip {
+      display: flex;
+      gap: 0.85rem;
+      align-items: flex-start;
+      padding: 1rem 1.15rem;
+      border-radius: var(--radius);
+      background: linear-gradient(135deg, rgba(251, 146, 60, 0.1), rgba(251, 191, 36, 0.06));
+      border: 1px solid rgba(251, 146, 60, 0.28);
+    }
+
+    .quick-tip i {
+      color: var(--orange);
+      margin-top: 0.15rem;
+    }
+
+    .quick-tip p {
+      margin: 0;
+      font-size: 0.88rem;
+      color: var(--muted);
+    }
+
+    /* 主内容区 */
+    main {
+      position: relative;
+      z-index: 1;
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 0 1.5rem 4rem;
+    }
+
+    .section-anchor {
+      scroll-margin-top: 72px;
+    }
+
+    section {
+      margin-bottom: 3rem;
+    }
+
+    .section-head {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 0.75rem;
+      margin-bottom: 1.25rem;
+    }
+
+    section h2 {
+      font-size: 1.35rem;
+      font-weight: 700;
+      margin: 0;
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+      letter-spacing: -0.02em;
+    }
+
+    section h2 .fa-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: var(--radius-sm);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, rgba(167, 139, 250, 0.2), rgba(244, 114, 182, 0.15));
+      color: #c4b5fd;
+      font-size: 1rem;
+      box-shadow: 0 2px 12px rgba(167, 139, 250, 0.2);
+    }
+
+    section h2 .fa-icon.cc {
+      background: linear-gradient(135deg, rgba(52, 211, 153, 0.18), rgba(34, 211, 238, 0.12));
+      color: #6ee7b7;
+      box-shadow: 0 2px 12px rgba(52, 211, 153, 0.2);
+    }
+
+    .section-tag {
+      font-size: 0.75rem;
+      color: var(--muted-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    /* 工作流步骤 */
+    .workflow {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 0.75rem;
+    }
+
+    @media (min-width: 768px) {
+      .workflow {
+        grid-template-columns: repeat(3, 1fr);
+      }
+    }
+
+    .workflow-step {
+      position: relative;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.15rem 1.2rem;
+      overflow: hidden;
+    }
+
+    .workflow-step::before {
+      content: attr(data-step);
+      position: absolute;
+      top: 0.65rem;
+      right: 0.85rem;
+      font-family: var(--font-mono);
+      font-size: 1.75rem;
+      font-weight: 700;
+      color: rgba(255, 255, 255, 0.04);
+      line-height: 1;
+    }
+
+    .workflow-step:nth-child(1) .step-num {
+      background: linear-gradient(135deg, rgba(167, 139, 250, 0.25), rgba(244, 114, 182, 0.15));
+      color: #c4b5fd;
+      box-shadow: 0 2px 8px rgba(167, 139, 250, 0.3);
+    }
+
+    .workflow-step:nth-child(2) .step-num {
+      background: linear-gradient(135deg, rgba(244, 114, 182, 0.22), rgba(251, 146, 60, 0.15));
+      color: #f9a8d4;
+      box-shadow: 0 2px 8px rgba(244, 114, 182, 0.3);
+    }
+
+    .workflow-step:nth-child(3) .step-num {
+      background: linear-gradient(135deg, rgba(52, 211, 153, 0.2), rgba(34, 211, 238, 0.15));
+      color: #6ee7b7;
+      box-shadow: 0 2px 8px rgba(52, 211, 153, 0.3);
+    }
+
+    .workflow-step .step-num {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      margin-bottom: 0.65rem;
+    }
+
+    .workflow-step:nth-child(1) { border-top: 2px solid rgba(167, 139, 250, 0.4); }
+    .workflow-step:nth-child(2) { border-top: 2px solid rgba(244, 114, 182, 0.4); }
+    .workflow-step:nth-child(3) { border-top: 2px solid rgba(52, 211, 153, 0.4); }
+
+    .workflow-step h3 {
+      margin: 0 0 0.4rem;
+      font-size: 0.95rem;
+      font-weight: 600;
+    }
+
+    .workflow-step p {
+      margin: 0;
+      font-size: 0.85rem;
+      color: var(--muted);
+      line-height: 1.55;
+    }
+
+    /* 对比表 */
+    .compare-wrap {
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      overflow: hidden;
+      background: var(--bg-elevated);
+    }
+
+    .compare-head {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      text-align: center;
+      font-size: 0.8rem;
+      font-weight: 700;
+      padding: 0.85rem 1rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .compare-head span:first-child {
+      color: #c4b5fd;
+      border-right: 1px solid var(--border);
+    }
+
+    .compare-head span:last-child {
+      color: #6ee7b7;
+    }
+
+    .compare-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      font-size: 0.88rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .compare-row:last-child {
+      border-bottom: none;
+    }
+
+    .compare-row > div {
+      padding: 0.85rem 1rem;
+      color: var(--muted);
+    }
+
+    .compare-row > div:first-child {
+      border-right: 1px solid var(--border);
+      background: rgba(167, 139, 250, 0.05);
+    }
+
+    .compare-row > div:last-child {
+      background: rgba(52, 211, 153, 0.05);
+    }
+
+    @media (max-width: 520px) {
+      .compare-head,
+      .compare-row {
+        grid-template-columns: 1fr;
+      }
+
+      .compare-head span:first-child {
+        border-right: none;
+        border-bottom: 1px solid var(--border);
+        padding-bottom: 0.65rem;
+      }
+
+      .compare-row > div:first-child {
+        border-right: none;
+        border-bottom: 1px solid var(--border);
+      }
+    }
+
+    .compare-label {
+      grid-column: 1 / -1;
+      padding: 0.5rem 1rem;
+      font-size: 0.72rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--muted-dim);
+      background: rgba(0, 0, 0, 0.2);
+      border-bottom: 1px solid var(--border);
+    }
+
+    /* 卡片 */
+    .card-grid {
+      display: grid;
+      gap: 1rem;
+    }
+
+    @media (min-width: 640px) {
+      .card-grid.two {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.25rem 1.35rem;
+      transition: border-color 0.2s, box-shadow 0.2s, transform 0.2s;
+    }
+
+    .card:hover {
+      border-color: var(--border-strong);
+      box-shadow: var(--shadow);
+    }
+
+    .card h3 {
+      font-size: 1rem;
+      font-weight: 600;
+      margin: 0 0 0.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.55rem;
+    }
+
+    .card h3 i {
+      color: #c4b5fd;
+      font-size: 0.95rem;
+      opacity: 0.95;
+    }
+
+    .card p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.92rem;
+    }
+
+    .cc-section .card {
+      border-left: 3px solid var(--cc);
+    }
+
+    .cc-section .card h3 i {
+      color: #6ee7b7;
+    }
+
+    kbd {
+      font-family: var(--font-mono);
+      font-size: 0.78rem;
+      font-weight: 500;
+      background: linear-gradient(160deg, #1e1a35, #16132a);
+      border: 1px solid rgba(167, 139, 250, 0.35);
+      padding: 0.2rem 0.5rem;
+      border-radius: 6px;
+      color: #d8b4fe;
+      box-shadow: 0 2px 0 rgba(0, 0, 0, 0.35), 0 0 8px rgba(167, 139, 250, 0.1);
+    }
+
+    .code-header {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      margin-top: 0.75rem;
+      margin-bottom: 0.4rem;
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: var(--muted-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    .code-header i {
+      color: #c4b5fd;
+    }
+
+    .code-block {
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      background: rgba(8, 6, 18, 0.85);
+      border: 1px solid rgba(167, 139, 250, 0.2);
+      border-radius: var(--radius-sm);
+      padding: 0.85rem 1rem;
+      margin-top: 0.5rem;
+      overflow-x: auto;
+      color: #c4b5fd;
+      line-height: 1.55;
+      box-shadow: inset 0 1px 0 rgba(167, 139, 250, 0.06);
+    }
+
+    .shortcut-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem 1rem;
+      margin-top: 0.65rem;
+    }
+
+    .shortcut-row span {
+      color: var(--muted);
+      font-size: 0.88rem;
+    }
+
+    ul.tips {
+      margin: 0.75rem 0 0;
+      padding-left: 1.15rem;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    ul.tips li {
+      margin-bottom: 0.45rem;
+    }
+
+    ul.tips li:last-child {
+      margin-bottom: 0;
+    }
+
+    /* 提示框 */
+    .callout {
+      display: flex;
+      gap: 0.85rem;
+      align-items: flex-start;
+      padding: 1rem 1.15rem;
+      border-radius: var(--radius-sm);
+      margin: 1rem 0 0;
+      font-size: 0.88rem;
+      line-height: 1.55;
+    }
+
+    .callout.warning {
+      background: linear-gradient(135deg, rgba(251, 146, 60, 0.1), rgba(251, 191, 36, 0.06));
+      border: 1px solid rgba(251, 146, 60, 0.3);
+      color: #fdba74;
+    }
+
+    .callout.warning p {
+      margin: 0;
+      color: var(--muted);
+    }
+
+    .callout.warning strong {
+      color: #fed7aa;
+    }
+
+    /* 快捷键网格 */
+    .kbd-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 0.65rem;
+      margin-top: 1rem;
+    }
+
+    .kbd-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      padding: 0.65rem 0.85rem;
+      background: rgba(167, 139, 250, 0.04);
+      border: 1px solid rgba(167, 139, 250, 0.15);
+      border-radius: var(--radius-sm);
+      font-size: 0.85rem;
+      transition: border-color 0.2s, background 0.2s;
+    }
+
+    .kbd-item:hover {
+      border-color: rgba(167, 139, 250, 0.3);
+      background: rgba(167, 139, 250, 0.08);
+    }
+
+    .kbd-item span:first-child {
+      color: var(--muted);
+    }
+
+    .kbd-item .keys {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.25rem;
+      justify-content: flex-end;
+    }
+
+    /* 链接芯片 */
+    .link-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-top: 1rem;
+    }
+
+    .link-chips a {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.45rem 0.85rem;
+      border-radius: 999px;
+      font-size: 0.82rem;
+      text-decoration: none;
+      color: #c4b5fd;
+      background: linear-gradient(135deg, rgba(167, 139, 250, 0.14), rgba(244, 114, 182, 0.08));
+      border: 1px solid rgba(167, 139, 250, 0.28);
+      transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
+    }
+
+    .link-chips a:hover {
+      background: linear-gradient(135deg, rgba(167, 139, 250, 0.25), rgba(244, 114, 182, 0.15));
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(167, 139, 250, 0.2);
+    }
+
+    .link-chips a.cc-chip {
+      color: #6ee7b7;
+      background: linear-gradient(135deg, rgba(52, 211, 153, 0.12), rgba(34, 211, 238, 0.08));
+      border-color: rgba(52, 211, 153, 0.28);
+    }
+
+    .link-chips a.cc-chip:hover {
+      background: linear-gradient(135deg, rgba(52, 211, 153, 0.22), rgba(34, 211, 238, 0.14));
+      box-shadow: 0 4px 12px rgba(52, 211, 153, 0.2);
+    }
+
+    /* 页脚 */
+    footer {
+      position: relative;
+      z-index: 1;
+      border-top: 1px solid var(--border);
+      background: linear-gradient(180deg, rgba(13, 10, 28, 0.88), rgba(10, 8, 20, 0.95));
+      padding: 2.5rem 1.5rem;
+    }
+
+    .footer-inner {
+      max-width: 1100px;
+      margin: 0 auto;
+      display: grid;
+      gap: 1.5rem;
+    }
+
+    @media (min-width: 700px) {
+      .footer-inner {
+        grid-template-columns: 1fr 1fr;
+        align-items: start;
+      }
+    }
+
+    .footer-links {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .footer-links strong {
+      font-size: 0.8rem;
+      color: var(--muted-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 0.25rem;
+    }
+
+    .footer-links a {
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 0.88rem;
+      transition: color 0.2s;
+    }
+
+    .footer-links a:hover {
+      color: var(--accent);
+    }
+
+    .footer-links a.cc-link {
+      color: var(--muted);
+    }
+
+    .footer-links a.cc-link:hover {
+      color: var(--cc);
+    }
+
+    footer .credit {
+      grid-column: 1 / -1;
+      text-align: center;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--border);
+      color: var(--muted-dim);
+      font-size: 0.82rem;
+      line-height: 1.7;
+    }
+
+    footer .credit a {
+      color: #c4b5fd;
+      text-decoration: none;
+    }
+
+    footer .credit a:hover {
+      text-decoration: underline;
+    }
+
+    footer .credit a.cc-link {
+      color: #6ee7b7;
+    }
+
+    /* 回到顶部 */
+    .to-top {
+      position: fixed;
+      bottom: 1.5rem;
+      right: 1.5rem;
+      z-index: 99;
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--muted);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+      box-shadow: var(--shadow);
+      opacity: 0;
+      visibility: hidden;
+      transform: translateY(8px);
+      transition: opacity 0.25s, visibility 0.25s, transform 0.25s, border-color 0.2s, color 0.2s;
+    }
+
+    .to-top.visible {
+      opacity: 1;
+      visibility: visible;
+      transform: translateY(0);
+    }
+
+    .to-top:hover {
+      border-color: rgba(167, 139, 250, 0.5);
+      color: #c4b5fd;
+      box-shadow: 0 4px 16px rgba(167, 139, 250, 0.25);
+    }
+
+    /* 彩色分隔线 */
+    .rainbow-divider {
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(167, 139, 250, 0.5), rgba(244, 114, 182, 0.5), rgba(52, 211, 153, 0.5), transparent);
+      margin: 0 auto 3rem;
+      max-width: 600px;
+    }
+  </style>
+</head>
+<body>
+  <div class="page-bg" aria-hidden="true"></div>
+
+  <nav class="top-nav" aria-label="页面导航">
+    <div class="top-nav-inner">
+      <div class="brand">
+        <span class="brand-dot" aria-hidden="true"></span>
+        <span>AI 编程入门</span>
+      </div>
+      <div class="nav-links">
+        <a href="#workflow">工作流</a>
+        <a href="#compare">对比</a>
+        <a href="#cursor-basics">Cursor</a>
+        <a href="#cc" class="cc-pill">Claude Code</a>
+        <a href="#shortcuts">快捷键</a>
+      </div>
+    </div>
+  </nav>
+
+  <header class="hero">
+    <div class="hero-grid">
+      <div class="hero-copy">
+        <div class="badge-row">
+          <div class="badge">
+            <i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i>
+            Cursor
+          </div>
+          <div class="badge cc">
+            <i class="fa-solid fa-terminal" aria-hidden="true"></i>
+            CC = Claude Code
+          </div>
+        </div>
+        <h1>Cursor 与 Claude Code 入门</h1>
+        <p><strong>Cursor</strong> 是带 AI 的编辑器；<strong>Claude Code</strong>（常简写 CC）是 Anthropic 的终端里编程助手，能在项目目录里读代码、改文件、跑命令。两者可配合：在 Cursor 里写代码，在集成终端里跑 <code>claude</code>。</p>
+        <div class="cta-row">
+          <a class="btn btn-primary" href="#cursor-basics"><i class="fa-solid fa-arrow-down" aria-hidden="true"></i> 从 Cursor 开始</a>
+          <a class="btn btn-ghost" href="#cc"><i class="fa-solid fa-terminal" aria-hidden="true"></i> 看 Claude Code</a>
+        </div>
+      </div>
+      <aside class="hero-side" aria-label="要点摘要">
+        <div class="stat-grid">
+          <div class="stat-card cursor">
+            <div class="icon-wrap"><i class="fa-solid fa-code" aria-hidden="true"></i></div>
+            <h4>编辑器内 AI</h4>
+            <p>聊天、Composer、Tab 补全与 <code>@</code> 引用，上下文紧贴当前项目。</p>
+          </div>
+          <div class="stat-card cc-card">
+            <div class="icon-wrap"><i class="fa-solid fa-server" aria-hidden="true"></i></div>
+            <h4>终端会话</h4>
+            <p>在仓库根目录启动，可执行命令、改多文件，适合自动化与深度任务。</p>
+          </div>
+        </div>
+        <div class="quick-tip">
+          <i class="fa-solid fa-lightbulb" aria-hidden="true"></i>
+          <p>最佳实践：同一项目目录下，左边 Cursor 看 diff，右边终端跑 <code>claude</code>，权限与变更一目了然。</p>
+        </div>
+      </aside>
+    </div>
+  </header>
+
+  <main>
+    <section id="workflow" class="section-anchor">
+      <div class="section-head">
+        <h2><i class="fa-solid fa-route fa-icon" aria-hidden="true"></i>典型工作流</h2>
+        <span class="section-tag">三步串联</span>
+      </div>
+      <div class="workflow">
+        <article class="workflow-step" data-step="01">
+          <div class="step-num">1</div>
+          <h3>打开项目</h3>
+          <p>在 Cursor 中打开仓库根目录，保证终端当前路径与项目一致，便于 CC 读写同一套文件。</p>
+        </article>
+        <article class="workflow-step" data-step="02">
+          <div class="step-num">2</div>
+          <h3>编辑与补全</h3>
+          <p>用 Chat / Composer 讨论方案、多文件修改；用 Tab 补全快速写完样板代码。</p>
+        </article>
+        <article class="workflow-step" data-step="03">
+          <div class="step-num">3</div>
+          <h3>终端里下任务</h3>
+          <p>集成终端运行 <code>claude</code>，处理需要跑命令、批量改文件或管道输入的任务。</p>
+        </article>
+      </div>
+    </section>
+
+    <section id="compare" class="section-anchor">
+      <div class="section-head">
+        <h2><i class="fa-solid fa-scale-balanced fa-icon" aria-hidden="true"></i>Cursor vs Claude Code</h2>
+        <span class="section-tag">快速对照</span>
+      </div>
+      <div class="compare-wrap">
+        <div class="compare-head">
+          <span>Cursor</span>
+          <span>Claude Code</span>
+        </div>
+        <div class="compare-label">界面与入口</div>
+        <div class="compare-row">
+          <div>图形化编辑器，侧边栏 Chat、浮层 Composer</div>
+          <div>终端 CLI，命令行交互与脚本友好</div>
+        </div>
+        <div class="compare-label">擅长场景</div>
+        <div class="compare-row">
+          <div>浏览代码、看 diff、写注释与局部重构</div>
+          <div>跑测试、批量改文件、与 shell / 管道结合</div>
+        </div>
+        <div class="compare-label">配合方式</div>
+        <div class="compare-row">
+          <div><code>@</code> 引用文件与规则，统一团队风格</div>
+          <div>在项目根启动，与 Cursor 终端同目录即可</div>
+        </div>
+      </div>
+    </section>
+
+    <section id="cursor-basics" class="section-anchor">
+      <div class="section-head">
+        <h2><i class="fa-solid fa-layer-group fa-icon" aria-hidden="true"></i>Cursor 基础功能</h2>
+        <span class="section-tag">核心能力</span>
+      </div>
+      <div class="card-grid two">
+        <div class="card">
+          <h3><i class="fa-solid fa-comments" aria-hidden="true"></i>AI 聊天（Chat）</h3>
+          <p>侧边栏对话，理解代码与文档。适合讨论方案、解释代码。</p>
+          <div class="shortcut-row">
+            <span><kbd>⌘</kbd> + <kbd>L</kbd>（Mac）/ <kbd>Ctrl</kbd> + <kbd>L</kbd>（Windows）</span>
+          </div>
+        </div>
+        <div class="card">
+          <h3><i class="fa-solid fa-pen-ruler" aria-hidden="true"></i>Composer</h3>
+          <p>多文件编辑浮层，适合一次性改多个文件的功能或重构。</p>
+          <div class="shortcut-row">
+            <span><kbd>⌘</kbd> + <kbd>I</kbd> / <kbd>Ctrl</kbd> + <kbd>I</kbd></span>
+          </div>
+        </div>
+        <div class="card">
+          <h3><i class="fa-solid fa-bolt" aria-hidden="true"></i>Cursor Tab</h3>
+          <p>灰色幽灵补全，<kbd>Tab</kbd> 接受，适合快速写完重复结构。</p>
+        </div>
+        <div class="card">
+          <h3><i class="fa-solid fa-at" aria-hidden="true"></i><code>@</code> 引用</h3>
+          <p>用 <code>@</code> 挂接文件、文件夹或文档，缩小上下文、提高回答质量。</p>
+        </div>
+      </div>
+      <div class="card" style="margin-top: 1rem;">
+        <h3><i class="fa-solid fa-book" aria-hidden="true"></i>规则与说明</h3>
+        <p>项目内规则（如 <code>.cursor/rules</code>）让 AI 统一遵守风格与约束。</p>
+      </div>
+    </section>
+
+    <section id="cc" class="section-anchor cc-section">
+      <div class="section-head">
+        <h2><i class="fa-solid fa-terminal fa-icon cc" aria-hidden="true"></i>Claude Code（CC）怎么用</h2>
+        <span class="section-tag">终端侧</span>
+      </div>
+      <p style="color: var(--muted); margin: 0 0 1.15rem; font-size: 0.95rem; max-width: 65ch;">Claude Code 在<strong>终端</strong>里工作：先安装并登录，再在<strong>项目根目录</strong>启动会话。官方文档：<a class="cc-link" href="https://docs.anthropic.com/en/docs/claude-code/overview" rel="noopener noreferrer" target="_blank" style="color: var(--cc);">Claude Code 概览</a>。</p>
+
+      <div class="link-chips">
+        <a href="https://docs.anthropic.com/en/docs/claude-code/overview" rel="noopener noreferrer" target="_blank"><i class="fa-solid fa-book-open" aria-hidden="true"></i> 概览</a>
+        <a href="https://docs.anthropic.com/en/docs/claude-code/cli-usage" rel="noopener noreferrer" target="_blank" class="cc-chip"><i class="fa-solid fa-terminal" aria-hidden="true"></i> CLI 用法</a>
+        <a href="https://docs.anthropic.com/en/docs/claude-code/mcp" rel="noopener noreferrer" target="_blank" class="cc-chip"><i class="fa-solid fa-plug" aria-hidden="true"></i> MCP</a>
+      </div>
+
+      <div class="card" style="margin-top: 1.25rem;">
+        <h3><i class="fa-solid fa-download" aria-hidden="true"></i>安装（示例）</h3>
+        <p>以官方当前说明为准，常见方式包括脚本或包管理器，例如：</p>
+        <div class="code-header"><i class="fa-solid fa-terminal" aria-hidden="true"></i> Shell</div>
+        <div class="code-block">curl -fsSL https://claude.ai/install.sh | bash</div>
+        <p style="margin-top: 0.85rem;">macOS 也可用 Homebrew：</p>
+        <div class="code-header"><i class="fa-brands fa-apple" aria-hidden="true"></i> Homebrew</div>
+        <div class="code-block">brew install --cask claude-code</div>
+      </div>
+
+      <div class="card">
+        <h3><i class="fa-solid fa-user-shield" aria-hidden="true"></i>登录与状态</h3>
+        <div class="code-block">claude auth login<br />claude auth status</div>
+        <ul class="tips">
+          <li>需有效的 Anthropic / Claude 订阅或计费方案（以账户与地区政策为准）。</li>
+          <li>退出：<code>claude auth logout</code></li>
+        </ul>
+        <div class="callout warning" role="note">
+          <i class="fa-solid fa-triangle-exclamation" style="flex-shrink: 0; margin-top: 0.1rem;" aria-hidden="true"></i>
+          <p><strong>安全提示：</strong>CC 可能请求读写文件与执行命令，请仅在信任的仓库中操作，并仔细审阅每次授权。</p>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3><i class="fa-solid fa-play" aria-hidden="true"></i>日常使用</h3>
+        <p>在仓库根目录打开终端，运行：</p>
+        <div class="code-block">cd /path/to/your-project<br />claude</div>
+        <p style="margin-top: 0.85rem;">也可带首条指令启动，或用 <code>-p</code> 做一次性问答后退出（适合脚本）。示例：</p>
+        <div class="code-block">claude "给这个仓库写一份 README 大纲"<br />claude -p "总结 src 目录职责"</div>
+        <ul class="tips">
+          <li><code>claude -c</code>：继续上一次对话（具体行为以当前 CLI 版本为准）。</li>
+          <li>管道：可把文件内容 pipe 给 <code>claude -p</code> 做批处理分析。</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h3><i class="fa-solid fa-screwdriver-wrench" aria-hidden="true"></i>与 Cursor 配合</h3>
+        <p>在 Cursor 中打开项目 → 打开集成终端（<kbd>Ctrl</kbd> + <kbd>`</kbd>）→ 在同一目录运行 <code>claude</code>。你在编辑器里看 diff、在终端里下任务，各取所长。</p>
+        <ul class="tips">
+          <li>权限：Claude Code 会请求读写文件、执行命令等，按提示审慎批准。</li>
+          <li>进阶：<a class="cc-link" href="https://docs.anthropic.com/en/docs/claude-code/mcp" rel="noopener noreferrer" target="_blank" style="color: var(--cc);">MCP</a>、子代理、插件等见官方 CLI 文档。</li>
+        </ul>
+      </div>
+    </section>
+
+    <section id="shortcuts" class="section-anchor">
+      <div class="section-head">
+        <h2><i class="fa-solid fa-keyboard fa-icon" aria-hidden="true"></i>Cursor 快捷键备忘</h2>
+        <span class="section-tag">可打印</span>
+      </div>
+      <div class="card">
+        <p style="margin: 0; color: var(--muted);">Windows 上多数将 <kbd>⌘</kbd> 换为 <kbd>Ctrl</kbd>。</p>
+        <div class="kbd-grid">
+          <div class="kbd-item">
+            <span>打开 Chat</span>
+            <span class="keys"><kbd>⌘</kbd><kbd>L</kbd></span>
+          </div>
+          <div class="kbd-item">
+            <span>Composer</span>
+            <span class="keys"><kbd>⌘</kbd><kbd>I</kbd></span>
+          </div>
+          <div class="kbd-item">
+            <span>接受 Tab 补全</span>
+            <span class="keys"><kbd>Tab</kbd></span>
+          </div>
+          <div class="kbd-item">
+            <span>命令面板</span>
+            <span class="keys"><kbd>⌘</kbd><kbd>Shift</kbd><kbd>P</kbd></span>
+          </div>
+        </div>
+        <ul class="tips" style="margin-top: 1rem;">
+          <li>在命令面板中搜索 <strong>Keyboard Shortcuts</strong> 可核对与自定义全部快捷键。</li>
+        </ul>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+      <div class="footer-links">
+        <strong>Cursor</strong>
+        <a href="https://cursor.com/docs" rel="noopener noreferrer" target="_blank">cursor.com/docs</a>
+      </div>
+      <div class="footer-links">
+        <strong>Claude Code</strong>
+        <a class="cc-link" href="https://docs.anthropic.com/en/docs/claude-code/cli-usage" rel="noopener noreferrer" target="_blank">CLI 文档</a>
+        <a class="cc-link" href="https://docs.anthropic.com/en/docs/claude-code/overview" rel="noopener noreferrer" target="_blank">产品概览</a>
+      </div>
+      <p class="credit">
+        图标：<a href="https://fontawesome.com/" rel="noopener noreferrer" target="_blank">Font Awesome 6</a>（<a href="https://cdnjs.com/" rel="noopener noreferrer" target="_blank">cdnjs</a>）。Cursor 以官方文档为准；Claude Code 以 <a class="cc-link" href="https://docs.anthropic.com/en/docs/claude-code/cli-usage" rel="noopener noreferrer" target="_blank">CLI 文档</a> 为准。
+      </p>
+    </div>
+  </footer>
+
+  <button type="button" class="to-top" id="toTop" aria-label="回到顶部">
+    <i class="fa-solid fa-arrow-up" aria-hidden="true"></i>
+  </button>
+
+  <script>
+    (function () {
+      var btn = document.getElementById("toTop");
+      if (!btn) return;
+      function toggle() {
+        btn.classList.toggle("visible", window.scrollY > 400);
+      }
+      window.addEventListener("scroll", toggle, { passive: true });
+      toggle();
+      btn.addEventListener("click", function () {
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      });
+    })();
+  </script>
+</body>
+</html>
